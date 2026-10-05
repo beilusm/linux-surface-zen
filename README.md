@@ -17,19 +17,23 @@ Boot 已关闭）、`0003`（Marvell WiFi）、`0011`（只匹配较新型号的
 代码重构；`0017–0024` 是旧版的网络安全修复，没有从旧内核原样
 重复应用。不可将此移植补丁视为适用于其他 Surface 型号的完整补丁集。
 
-Arch Zen 配置和 Surface 配置片段合并后关闭了 Rust 支持（本机缺少
-`rust-bindgen`/`rust-src`）及调试符号（本机只有 8 GB RAM）；其余尽量
-保持 Arch Zen 配置。IPTS 和 Surface Aggregator 以模块形式编译。
+`configs/surface-pro7-fast.config` 由 Arch Zen 配置、Surface 片段和本机
+`localmodconfig` 生成，并额外保留相机、键盘盖、USB 存储、ext4、XFS、
+exFAT 等驱动。它把模块数从约 6,343 个降至约 279 个，针对这台
+Pro 7，不能视为通用发行版配置。Rust 支持（本机缺少 `rust-bindgen`/
+`rust-src`）和调试符号也已关闭。IPTS 和 Surface Aggregator 以模块
+形式编译。首次尝试的全量编译输出留在 `build-full/`，可供以后研究。
 
 在本目录运行：
 
 ```bash
-JOBS=3 ./build.sh
+JOBS=6 ./build.sh
 makepkg -f
 ```
 
-`JOBS=3` 适合这台 8 GB 内存的机器。第一条命令验证下载包 SHA-256，
-按需提取固定的 Zen tag、应用已移植补丁、生成配置并编译。
+`JOBS=6` 是本机已试用的并行度；若内存压力大可改为 `JOBS=3`。
+第一条命令验证下载包 SHA-256，按需提取固定的 Zen tag、应用
+已移植补丁、使用预生成的 Pro 7 配置并编译。
 第二条命令生成 `linux-surface-zen` 和 `linux-surface-zen-headers`
 的 Arch 安装包；它会复用已编译的输出。
 

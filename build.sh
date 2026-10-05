@@ -7,7 +7,7 @@ version=7.2.9-zen1
 tarball=zen-v${version}.tar.gz
 patchfile=patches/surface-zen-7.2.9.patch
 source_sha256=814d32e75ca07fcc0bd8290ade366ea66c3ca0c33242995b41b29e3dd9d18bb5
-jobs=${JOBS:-3}
+jobs=${JOBS:-6}
 
 printf '%s  %s\n' "$source_sha256" "$tarball" | sha256sum --check --status || {
   if [[ ! -f $tarball ]]; then
@@ -31,20 +31,12 @@ else
 fi
 
 mkdir -p build
-# Preserve an identical .config so an incremental makepkg build stays incremental.
-config_fingerprint=$(
-  sha256sum configs/arch-zen-7.2.9.config configs/surface-6.19.config "$patchfile"
-  printf '%s\n' 'surface-zen-config-v1: localversion=-surface-zen, no debug info, no Rust'
-)
-config_fingerprint=$(printf '%s\n' "$config_fingerprint" | sha256sum | cut -d' ' -f1)
+# Deterministic Pro 7 profile: derived from Arch Zen + linux-surface via
+# localmodconfig on this device, with camera, Type Cover and common USB added.
+config_fingerprint=$(sha256sum configs/surface-pro7-fast.config "$patchfile" | sha256sum | cut -d' ' -f1)
 if [[ ! -s build/.config || ! -f build/.surface-zen-config-sha256 ||
       $(<build/.surface-zen-config-sha256) != "$config_fingerprint" ]]; then
-  kernel/scripts/kconfig/merge_config.sh -m -O "$root/build" \
-    configs/arch-zen-7.2.9.config configs/surface-6.19.config
-  kernel/scripts/config --file build/.config \
-    --set-str LOCALVERSION '-surface-zen' --disable LOCALVERSION_AUTO \
-    --enable DEBUG_INFO_NONE --disable DEBUG_INFO_DWARF5 --disable DEBUG_INFO_BTF \
-    --disable RUST
+  cp configs/surface-pro7-fast.config build/.config
   make -C kernel O="$root/build" LOCALVERSION= olddefconfig
   printf '%s\n' "$config_fingerprint" > build/.surface-zen-config-sha256
 fi
@@ -56,7 +48,8 @@ release=$(make -s -C kernel O="$root/build" LOCALVERSION= kernelrelease)
   echo "Unexpected kernel release: $release" >&2
   exit 1
 }
-for symbol in HID_IPTS SURFACE_AGGREGATOR SURFACE_GPE VIDEO_IPU3_CIO2; do
+for symbol in HID_IPTS HID_MULTITOUCH HID_SURFACE SURFACE_AGGREGATOR \
+              SURFACE_GPE VIDEO_IPU3_CIO2 DRM_I915 IWLWIFI NVME_CORE; do
   grep -q "^CONFIG_${symbol}=m$" build/.config || {
     echo "Required CONFIG_${symbol}=m missing after olddefconfig" >&2
     exit 1
