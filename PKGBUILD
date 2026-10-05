@@ -6,7 +6,8 @@ pkgdesc='Zen Linux kernel with Surface Pro 7 support'
 arch=(x86_64)
 url='https://github.com/linux-surface/linux-surface'
 license=(GPL-2.0-only)
-makedepends=(bc binutils cpio flex bison gcc git libelf openssl pahole perl python rsync)
+makedepends=(bc binutils cpio curl flex bison gcc gettext git glibc libelf libgcc
+             openssl pahole perl python rsync tar xxhash zlib zstd)
 options=(!debug !strip)
 source=()
 sha256sums=()
@@ -41,7 +42,7 @@ package_linux-surface-zen() {
 
 package_linux-surface-zen-headers() {
   pkgdesc="Headers and build scripts for the $pkgdesc"
-  depends=(binutils glibc libelf openssl pahole zstd)
+  depends=(binutils glibc libelf libgcc openssl pahole xxhash zlib zstd)
   provides=(LINUX-HEADERS)
   local release builddir src out
   release=$(_release)
