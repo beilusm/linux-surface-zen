@@ -56,5 +56,13 @@ for symbol in HID_IPTS HID_MULTITOUCH HID_SURFACE SURFACE_AGGREGATOR \
   }
 done
 
-make -C kernel O="$root/build" LOCALVERSION= -j "$jobs" all
+if [[ -s build/arch/x86/boot/bzImage && -s build/vmlinux &&
+      -s build/Module.symvers && -s build/drivers/hid/ipts/ipts.ko &&
+      -f build/.surface-zen-build-sha256 &&
+      $(<build/.surface-zen-build-sha256) == "$config_fingerprint" ]]; then
+  echo "Using previously completed $release build"
+else
+  make -C kernel O="$root/build" LOCALVERSION= -j "$jobs" all
+  printf '%s\n' "$config_fingerprint" > build/.surface-zen-build-sha256
+fi
 printf 'Built %s: %s\n' "$release" "$root/build/arch/x86/boot/bzImage"
