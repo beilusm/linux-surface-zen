@@ -1,0 +1,9 @@
+/build/
+/kernel/
+/upstream-surface/
+/upstream-arch-zen/
+/src/
+/pkg/
+/*.log
+/*.tar.gz
+/*.pkg.tar.*
