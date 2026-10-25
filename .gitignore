@@ -1,10 +1,15 @@
-/build/
-/kernel/
-/upstream-surface/
-/upstream-arch-zen/
+# Generated files live here, not beside the project inputs.
+/.cache/
+/work/
+/artifacts/
+
+# Compatibility links for the already compiled 7.2.9 tree (absolute Kbuild paths).
+/build
+/kernel
+
+# Catch files emitted by plain makepkg or older project commands.
 /src/
 /pkg/
 /*.log
 /*.tar.gz
 /*.pkg.tar.*
-/build-full/
