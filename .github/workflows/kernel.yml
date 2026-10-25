@@ -17,6 +17,10 @@ on:
         description: Build time slice in minutes (1-270); checkpoint saved afterward
         type: string
         default: '240'
+      environment_only:
+        description: Validate runner disk and Arch dependencies without compiling
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -62,6 +66,7 @@ jobs:
           echo "uid=$(id -u)" >> "$GITHUB_OUTPUT"
 
       - name: Restore latest incremental checkpoint
+        if: ${{ !inputs.environment_only }}
         id: checkpoint
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
@@ -71,6 +76,7 @@ jobs:
             output-v1-${{ steps.identity.outputs.profile }}-${{ inputs.flavor }}-${{ hashFiles('project.conf', 'versions/**', 'configs/**', 'patches/**', 'scripts/**', 'ci/**') }}-
 
       - name: Import checkpoint or local progress
+        if: ${{ !inputs.environment_only }}
         shell: bash
         run: |
           set -euo pipefail
@@ -114,6 +120,7 @@ jobs:
           docker exec surface-zen-builder bash ci/container-setup.sh
 
       - name: Compile and package from existing output
+        if: ${{ !inputs.environment_only }}
         id: build
         continue-on-error: true
         shell: bash
