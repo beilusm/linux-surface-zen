@@ -19,7 +19,7 @@ on:
         default: '240'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: surface-zen-${{ github.ref }}-${{ inputs.flavor }}
@@ -53,8 +53,8 @@ jobs:
             /usr/local/share/powershell /opt/az
           df -h .
           free_kib=$(df -Pk . | awk 'NR==2 {print $4}')
-          (( free_kib >= 45 * 1024 * 1024 )) || {
-            echo 'At least 45 GiB of free disk is required for this DWARF/BTF kernel build.' >&2
+          (( free_kib >= 50 * 1024 * 1024 )) || {
+            echo 'At least 50 GiB of free disk is required for this DWARF/BTF kernel build.' >&2
             exit 1
           }
           source project.conf
@@ -91,7 +91,12 @@ jobs:
           assert d['flavor']==os.environ['SURFACE_ZEN_FLAVOR']
           print('Importing cache from', d['project_path'], 'for', d['profile'])
           PY
-            cat .cache/bootstrap-download/cache.tar.zst.part-* | zstd -d | tar -xf - --no-same-owner
+            # Remove only consumed temporary transport copies; originals remain
+            # in the seed release and on the user's machine.
+            for part in .cache/bootstrap-download/cache.tar.zst.part-*; do
+              cat "$part"
+              rm -- "$part"
+            done | zstd -d | tar -xf - --no-same-owner
           else
             echo 'No checkpoint or bootstrap provided; this run starts a new cloud build.'
           fi
@@ -117,6 +122,7 @@ jobs:
             surface-zen-builder bash ci/build.sh
 
       - name: Verify kernel, modules, BTF and external module headers
+        id: verify
         if: steps.build.outcome == 'success'
         shell: bash
         run: |
@@ -138,25 +144,11 @@ jobs:
           path: .cache/ci-checkpoints/output.tar.zst
           key: output-v1-${{ steps.identity.outputs.profile }}-${{ inputs.flavor }}-${{ hashFiles('project.conf', 'versions/**', 'configs/**', 'patches/**', 'scripts/**', 'ci/**') }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Upload verified packages
-        if: success() && steps.build.outcome == 'success'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: linux-surface-zen-${{ steps.identity.outputs.profile }}-${{ inputs.flavor }}
-          path: artifacts/packages/*.pkg.tar.zst
-          compression-level: 0
-          retention-days: 14
-          if-no-files-found: error
-
-      - name: Upload build logs and validation reports
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: logs-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            artifacts/logs/
-            artifacts/reports/
-          retention-days: 7
+      - name: Publish results without using Actions artifact storage
+        if: always() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure')
+        env:
+          VERIFIED: ${{ steps.verify.outcome == 'success' }}
+        run: bash ci/publish-results.sh
 
       - name: Report incomplete build
         if: always() && steps.build.outcome == 'failure'

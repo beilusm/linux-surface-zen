@@ -42,16 +42,19 @@ ccache。ccache 首次迁移时导入；后续同配置主要直接复用 `.o`�
 构建输入，并按运行编号更新。默认免费缓存总额为 10 GB，旧检查点会按
 GitHub 的规则淘汰；不自动提高额度或启用付费 runner。若检查点本身
 超过额度，保存可能失败，应查看保存步骤；本机原输出和初次导入 release
-仍保留。runner 会释放自身预装 SDK 空间并检查至少 45 GiB 可用磁盘。
+仍保留。runner 会释放自身预装 SDK 空间并检查至少 50 GiB 可用磁盘。
 
 编译后自动生成内核/headers 两个 Arch 包，并运行完整模块、BTF 和
-外部模块 headers 检查。验证成功后在该次运行的 **Artifacts** 中下载
-`linux-surface-zen-<版本>-pro7`；日志和报告另存为 artifact。
+外部模块 headers 检查。验证成功后在仓库 **Releases** 中下载该次运行的
+两个 `.pkg.tar.zst`；日志和报告另存为该 release 的 `diagnostics.tar.gz`。
+未通过检查时仅发布诊断包。结果链接也显示在运行摘要中，不使用 Actions
+artifact 存储，不因反复构建累积占用账号的 artifact 免费额度。
 
 ```bash
 gh workflow run kernel.yml -R beilusm/linux-surface-zen -f flavor=pro7
 gh run list -R beilusm/linux-surface-zen
-gh run download <运行ID> -R beilusm/linux-surface-zen -n <产物名称>
+gh release list -R beilusm/linux-surface-zen
+gh release download <结果tag> -R beilusm/linux-surface-zen -p '*.pkg.tar.zst'
 ```
 
 公开仓库标准 Linux runner 当前为 4 vCPU / 16 GB RAM。迁移的直接收益是
