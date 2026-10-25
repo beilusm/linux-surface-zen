@@ -25,6 +25,21 @@ cat artifacts/ci-transfer/latest
 首次运行将该 release 的 tag 填入 `bootstrap_tag`。传输数据是本项目
 的编译中间产物，在公开仓库中可以被下载。
 
+已有 seed release 后也可使用上传助手；已完成的同名分块会跳过，全部
+上传后自动触发正式构建。放在 systemd 用户服务中可独立于终端持续上传：
+
+```bash
+systemd-run --user --unit=surface-zen-cloud-transfer \
+  --working-directory="$PWD" \
+  /usr/bin/python "$PWD/scripts/ci-upload-cache.py" \
+  --repo beilusm/linux-surface-zen --tag <seed-tag> \
+  --directory "$(cat artifacts/ci-transfer/latest)"
+journalctl --user -u surface-zen-cloud-transfer -f
+```
+
+上传状态也写在导出目录的 `cloud-transfer.json` 中。首次迁移实测
+13,940,091,945 字节（12.98 GiB），8 个分块；这不是 Git 历史大小。
+
 ## 云端续编与下载
 
 工作流优先恢复同一输入的最新增量检查点；没有检查点时才导入本机进度。

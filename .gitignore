@@ -13,3 +13,7 @@
 /*.log
 /*.tar.gz
 /*.pkg.tar.*
+
+# Python helper bytecode.
+__pycache__/
+*.py[cod]
